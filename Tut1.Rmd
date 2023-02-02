@@ -1,0 +1,163 @@
+---
+title: "ST4234_T1"
+author: "Bian Ce"
+date: "2023-01-27"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(tidyverse)
+library(TeachingDemos)
+set.seed(4234)
+```
+
+Q1(b)
+```{r}
+Y = 57
+n = 100
+theta = seq(from = 0, to = 1, by = 0.1)
+
+probs = dbinom(x=Y, size=n, p=theta)
+
+df.1b = data.frame(theta = theta, prob = probs); df.1b
+ggplot(df.1b,aes(x=theta, y=prob)) + geom_bar(stat = 'identity')
+```
+Q1(c)
+```{r}
+denom <- sum(dbinom(Y, n, theta))
+post.1c <- dbinom(Y, n, theta) / denom
+
+df.1c <- data.frame(theta=theta, post_dist.1c = post.1c); df.1c
+ggplot(df.1c, aes(x=theta, y=post_dist.1c)) + geom_bar(stat = 'identity')
+
+sum(df.1c$post_dist)
+```
+
+Q1(d)
+```{r}
+theta.cont <- seq(0, 1, by=0.0001)
+post.1d <- dbinom(Y, n, theta.cont)
+
+df.1d <- data.frame(theta.cont=theta.cont, post_dist.1d=post.1d)
+
+ggplot(df.1d, aes(x=theta.cont, y=post_dist.1d)) + geom_line() 
+```
+Q1(e)
+```{r}
+post.1e <- dbeta(theta.cont, 58,44)
+
+df.1e <- data.frame(theta.cont=theta.cont, post_dist.1e=post.1e)
+
+ggplot(df.1e, aes(x=theta.cont, y=post_dist.1e)) + geom_line()
+```
+Q2(a)
+```{r}
+beta_mean <- function(a, b){
+  return (a/(a+b))
+}
+
+beta_var <- function(a, b) {
+  return (a*b / ((a+b)^2 * (a+b+1)))
+}
+
+rm(theta)
+theta <- seq(0, 1, by=0.001)
+a.2a = 11/12; b.2a = 11/6
+prior.2a <- dbeta(theta, a.2a, b.2a)
+
+df.2a <- data.frame(theta=theta, prior.2a=prior.2a);
+ggplot(df.2a, aes(x=theta, y=prior.2a)) + geom_line()
+
+prior.2a.sd = sqrt(beta_var(a.2a, b.2a))
+prior.2a.sd
+```
+Q2(b)
+```{r}
+a.2b = 47/12; b.2b = 59/6
+post.2b <- dbeta(theta, a.2b, b.2b)
+
+df.2b <- data.frame(theta=theta, post_dist.2b=post.2b)
+
+ggplot(df.2b, aes(x=theta, y=post_dist.2b)) + geom_line()
+
+mean.2b = beta_mean(a.2b, b.2b); mean.2b
+median.2b = qbeta(0.5, a.2b, b.2b); median.2b
+mode.2b = (a.2b-1)/(a.2b+b.2b-2); mode.2b
+```
+Q2(c)
+```{r}
+require(TeachingDemos)
+
+hpd.50 <- hpd(qbeta, shape1=a.2b, shape2=b.2b, conf=0.50); hpd.50
+quant.50 <- qbeta(c(0.25, 0.75), a.2b, b.2b); quant.50
+```
+
+Q3(a)
+```{r}
+#define range
+p = seq(0,1, length=100)
+
+#create plot of Beta distribution with shape parameters 2 and 10
+plot(p, dbeta(p, 3, 14), type='l')
+```
+
+Q3(c)
+```{r}
+rm(n)
+
+n = 278
+Pr <- function(y) {
+  return (choose(n, y) * beta(y+3, 292-y) / beta(3,14))
+}
+
+y <- seq(0, n, by = 1)
+y.density <- sapply(y, Pr)
+plot(y, y.density, type='l')
+
+# Obtain the mean and s.d.
+y.mean <- sum(y*y.density)
+y.mean # 49.05882
+
+y.sd <- sqrt(sum(y.density * (y - y.mean)^2))
+y.sd # 25.73196
+```
+
+Q3(d)
+```{r}
+theta_hat = 2/15
+y.mle.density <- dbinom(y, n, theta_hat)
+plot(y, y.mle.density, xlab="y", ylab="Pr(Y2|theta)", type = 'l')
+
+bino_mean <- function(theta,n) {n*theta}
+bino_sd <- function(theta,n) {sqrt(n*theta*(1-theta))}
+y.mle.mean <- bino_mean(theta_hat ,n)
+y.mle.mean # 37.06667
+y.mle.sd <- bino_sd(theta_hat, n)
+y.mle.sd # 5.667843
+
+# Calculating the 95% c.i. for theta
+theta.ci <- qbeta(c(0.025, 0.975), 3, 14)
+df <- data.frame(y, dbinom(y, n, theta.ci[1]), dbinom(y, n, theta.ci[2]))
+
+ggplot(df, aes(y)) + 
+  geom_line(aes(y = dbinom(y, n, theta.ci[1])), colour="#0000FF") +
+  geom_line(aes(y = dbinom(y, n, theta.ci[2])), colour="#0000FF") + 
+  geom_line(aes(y = y.mle.density), colour="#FF0000") +
+  geom_line(aes(y = y.density), colour="#000000") +
+  xlab("y2") + ylab("Pr(Y2|theta)")
+
+y.left.mean <- bino_mean(theta.ci[1], n)
+y.left.sd <- bino_sd(theta.ci[1], n)
+y.left.mean # 11.2517
+y.left.sd # 3.285772
+
+y.right.mean <- bino_mean(theta.ci[2], n)
+y.right.sd <- bino_sd(theta.ci[2], n)
+y.right.mean # 106.6064
+y.right.sd # 8.107119
+```
+
+
+
